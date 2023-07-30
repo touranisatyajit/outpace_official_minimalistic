@@ -1,3 +1,5 @@
+Due Credits to the authors for this amazing work. 
+
 # OUTPACE
 
 This is a Pytorch implementation of **OUTPACE** from our paper: "Outcome-directed Reinforcement Learning by Uncertainty & Temporal Distance-Aware Curriculum Goal Generation" (ICLR 2023 Spotlight)
