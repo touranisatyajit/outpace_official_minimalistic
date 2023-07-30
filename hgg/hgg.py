@@ -103,8 +103,10 @@ class MatchSampler:
 		if noise_std is None: noise_std = self.delta
 		
 		if self.env_name in ['AntMazeSmall-v0', 'PointUMaze-v0']:
+			
 			goal += np.random.normal(0, noise_std, size=2)	
 			goal = np.clip(goal, (-2,-2), (10,10))
+			#print("Inside add_noise", pre_goal.copy(), goal, noise_std)
 		elif self.env_name in ['sawyer_peg_pick_and_place']:
 			noise = np.random.normal(0, noise_std, size=goal.shape[-1])			
 			goal += noise
@@ -132,31 +134,23 @@ class MatchSampler:
 				noise_std = 0.05
 			else:
 				raise NotImplementedError('Should consider noise scale env by env')
-			return self.add_noise(self.pool[idx], noise_std = noise_std)
+			final_goal_after_noise = self.add_noise(self.pool[idx], noise_std = noise_std)
+			#print("Inside sample", self.pool, idx, noise_std, self.pool[idx], final_goal_after_noise)
+			return final_goal_after_noise
 		else:
 			return self.pool[idx].copy()
 
 	def update(self, initial_goals, desired_goals, replay_buffer = None, meta_nml_epoch = 0):
+
+		import pdb; pdb.set_trace();
 		if self.achieved_trajectory_pool.counter==0:
 			self.pool = copy.deepcopy(desired_goals)
 			return
 
 		achieved_pool, achieved_pool_init_state = self.achieved_trajectory_pool.pad()
 		# for meta nml computational efficiency, jump 5% of max timesteps
-		if 'meta_nml' in self.cost_type:
-			if self.split_type_for_meta_nml=='uniform':
-				# uniform split
-				achieved_pool = [traj[::int(self.max_episode_timesteps*self.split_ratio_for_meta_nml)] for traj in achieved_pool] # list of reduced ts			
-				raise NotImplementedError
-			elif self.split_type_for_meta_nml=='last':
-				# uniform split on last N steps
-				if self.env_name in ['AntMazeSmall-v0']:
-					interval = 6
-				elif self.env_name in ['PointUMaze-v0', 'sawyer_peg_push', 'sawyer_peg_pick_and_place', "PointNMaze-v0", "PointSpiralMaze-v0"]:
-					interval = 4
-				else:
-					raise NotImplementedError
-				achieved_pool = [np.concatenate([traj[int(-self.split_ratio_for_meta_nml*self.max_episode_timesteps)::interval], traj[-1:]], axis=0) for traj in achieved_pool] # list of reduced ts			
+		interval = 4
+		achieved_pool = [np.concatenate([traj[int(-self.split_ratio_for_meta_nml*self.max_episode_timesteps)::interval], traj[-1:]], axis=0) for traj in achieved_pool] # list of reduced ts			
 			
 			
 
@@ -223,6 +217,7 @@ class MatchSampler:
 			for i in range(len(achieved_value)):
 				achieved_value[i] = ((achieved_value[i]-aim_outputs_min)/(aim_outputs_max - aim_outputs_min+0.00001)-0.5)*2 #[0, 1] -> [-1,1]
 
+		import pdb; pdb.set_trace();
 		if 'meta_nml' in self.cost_type:
 
 			# achieved_pool : list of [ts, dim] (ts could be different)
